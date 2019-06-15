@@ -2,8 +2,9 @@ import numpy as np
 import os
 
 class Recogniser:
-    def __init__(self, cv2):
+    def __init__(self, cv2, db):
         self.cv2 = cv2
+        self.db = db
         self.recognizer = self.cv2.face.LBPHFaceRecognizer_create()
         self.recognizer.read('trainer/trainer.yml')
 

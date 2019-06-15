@@ -7,58 +7,72 @@ import time
 # store that image, check how many we have of that id
 # if enough, run training
 class Trainer:
-    def __init__(self, cv2):
+    def __init__(self, cv2, db):
         self.cv2 = cv2
+        self.db = db
         self.path = 'faces'
         self.unknown_dir = 'faces/unknown'
         self.recognizer = self.cv2.face.LBPHFaceRecognizer_create()
         self.recognizer.read('trainer/trainer.yml')
-        self.images_required = 20
+        self.images_required = 30
+        self.user_id = None
 
-    def call(self, frame, face, id):
-        self.unknown_images = [os.path.join(self.unknown_dir,f) for f in os.listdir(self.unknown_dir)]
+    def call(self, frame, face):
+        self.set_user_id()
+
         (x,y,w,h) = face
         face_image = frame[y:y+h, x:x+w]
-        self.save_image(face_image, id)
+        self.save_image(face_image)
 
-        if(len(self.unknown_images) > self.images_required):
-          self.train()
+        if(self.image_count > self.images_required):
+            self.train()
+            self.create_user()
 
-    def save_image(self, image, id):
-        existing_count = len(self.unknown_images)
-        self.cv2.imwrite("faces/unknown/"+str(id)+"."+str(existing_count)+".jpg", image)
+    def save_image(self, image):
+        now = str(round(time.time() * 1000))
+        path = "faces/"+str(self.user_id)+"/"+str(now)+".png"
+        self.cv2.imwrite(path, image)
+        self.image_count += 1
+
+    def set_user_id(self):
+        if(self.user_id != None):
+            return self.user_id
+        existing_users = self.db.all('users')
+        self.user_id = len(existing_users)
+
+        # create dir for this user
+        dir_name = 'faces/'+str(self.user_id)
+        if not os.path.exists(dir_name):
+            os.mkdir(dir_name)
+        else:
+            print('[INFO] Training folder already found')
+
+        self.image_count = len([os.path.join(dir_name,f) for f in os.listdir(dir_name)])
 
     def training_images(self):
         files = []
         for r, d, f in os.walk(self.path):
             for file in f:
-                if '.jpg' in file:
+                if '.png' in file:
                     files.append(os.path.join(r, file))
         return files
 
-    def save_unrecognised(self):
-        id = input('enter id: ')
-        now = str(round(time.time() * 1000))
-        index = 0
-        for imagePath in self.unknown_images:
-            os.rename(imagePath, self.path+'/'+str(id)+'/'+str(id)+'.'+now+'.'+str(index)+'.jpg')
-            index+=1
+    def create_user(self):
+        self.db.insert('users', {'id': self.user_id, 'name': 'User '+str(self.user_id), 'permissions': 0})
+        self.user_id = None
 
     def train(self):
-        self.save_unrecognised()
         images = self.training_images()
-        print(images)
         print('[INFO] Training against '+str(len(images))+' images')
 
         faceSamples=[]
         ids = []
-        for imagePath in images:
-            PIL_img = Image.open(imagePath).convert('L') # grayscale
+        for image_path in images:
+            PIL_img = Image.open(image_path).convert('L') # grayscale
             img_numpy = np.array(PIL_img,'uint8')
-            id = int(os.path.split(imagePath)[-1].split(".")[0])
+            id = int(image_path.split('/')[-2])
             faceSamples.append(img_numpy)
             ids.append(id)
-
 
         self.recognizer.train(faceSamples, np.array(ids))
         self.recognizer.write('trainer/trainer.yml')

@@ -5,15 +5,16 @@ import face_trainer
 
 class Vision:
 
-    def __init__(self, cv2):
+    def __init__(self, cv2, db):
         self.detector = face_detector.Detector(cv2)
-        self.recogniser = face_recogniser.Recogniser(cv2)
-        self.trainer = face_trainer.Trainer(cv2)
+        self.recogniser = face_recogniser.Recogniser(cv2, db)
+        self.trainer = face_trainer.Trainer(cv2, db)
         self.cv2 = cv2
+        self.db = db
         self.video = cv2.VideoCapture(0)
         self.font = cv2.FONT_HERSHEY_SIMPLEX
-        self.recognition_threshold = 45
-        self.names = ['James','Dave','?','?','?']
+        self.recognition_threshold = 65
+        self.user_list = None
 
     def call(self):
         ret, self.frame = self.video.read()
@@ -23,22 +24,40 @@ class Vision:
 
     def recognise_faces(self):
         recognised_faces = self.recogniser.call(self.frame, self.faces)
-        #print('[INFO] {} faces found  '.format(recognised_faces), end='\r')
         for (x, y, w, h, id, confidence) in recognised_faces:
             if(int(confidence) > self.recognition_threshold):
-                name = self.names[id]
+                name = self.name(id)
                 color = (0,255,0)
             else:
                 name = 'Unknown'
                 color = (0,0,255)
-                self.train_face((x, y, w, h), id)
+                self.train_face((x, y, w, h))
 
             self.render_text(str(name), x+5, y-5, color)
             self.render_text(str(confidence), x+5, y+h+30, color)
         return recognised_faces
 
-    def train_face(self, face, id):
-        self.trainer.call(self.frame, face, id)
+    def name(self, id):
+        if(len(self.users()) <= id):
+            return 'not in db'
+        return self.users()[id]
+
+    def users(self):
+        if(self.user_list != None):
+            return self.user_list
+        users = {}
+        for (id, name, permissions, last_seen_at) in self.db.all('users'):
+            users[id] = name
+        self.user_list = users
+        print('[INFO] Users set')
+        print(users)
+        return users
+
+    def train_face(self, face):
+        self.trainer.call(self.frame, face)
+
+    def train(self):
+        self.trainer.train()
 
     def render_text(self, text, x, y, color):
         self.cv2.putText(self.frame, text, (x,y), self.font, 1, color, 2)
