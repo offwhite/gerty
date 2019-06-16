@@ -47,7 +47,7 @@ class Gerty:
         return self.upei.image(exp)
 
     def handle_keyboard_input(self, key):
-        if key == ord('q'):
+        if (key == ord('q') or key == ord('x')):
             self.stop()
 
         if key == ord('c'):

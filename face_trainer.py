@@ -3,9 +3,10 @@ from PIL import Image
 import os
 import time
 
-# handed an image of unrecognised face with an id
-# store that image, check how many we have of that id
-# if enough, run training
+# handed an image of unrecognised face
+# 1. store that image
+# 2. check how many we have of that id
+# 3. if enough, run training
 class Trainer:
     def __init__(self, cv2, db):
         self.cv2 = cv2
