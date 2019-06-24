@@ -12,7 +12,6 @@ class Trainer:
         self.cv2 = cv2
         self.db = db
         self.path = 'faces'
-        self.unknown_dir = 'faces/unknown'
         self.recognizer = self.cv2.face.LBPHFaceRecognizer_create()
         self.recognizer.read('trainer/trainer.yml')
         self.images_required = 30
