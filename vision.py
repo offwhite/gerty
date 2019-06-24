@@ -11,8 +11,9 @@ class Vision:
         self.db = db
         self.video = cv2.VideoCapture(0)
         self.font = cv2.FONT_HERSHEY_SIMPLEX
-        self.recognition_threshold = 65
+        self.recognition_threshold = 60
         self.user_list = None
+        self.training_enabled = False
         self.trainer.train()
 
     def call(self):
@@ -27,9 +28,10 @@ class Vision:
                 name = self.name(id)
                 color = (0,255,0)
             else:
-                name = 'Unknown'
+                name = 'probably '+self.name(id)
                 color = (0,0,255)
-                self.train_face((x, y, w, h))
+                if(self.training_enabled):
+                    self.train_face((x, y, w, h))
 
             self.render_text(str(name), x, y-10, color)
             self.render_text(str(confidence), x, y+h+30, color)

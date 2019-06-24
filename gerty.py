@@ -11,9 +11,9 @@ class Gerty:
         self.vision = vision.Vision(cv2, self.db)
         self.upei = upei.Upei(cv2)
         self.cv2 = cv2
-        self.debug = True
-        self.show_upei = False
-        self.framerate = 2 # number of frames per second
+        self.debug = False
+        self.show_upei = True
+        self.framerate = 10 # number of frames per second
 
     def start(self):
          print("[INFO] Starting Gerty - press 'q' to quit")
@@ -27,7 +27,7 @@ class Gerty:
         if(self.debug):
             self.cv2.imshow('View', self.frame)
         if(self.show_upei):
-          self.cv2.imshow('Unit Primary Emotional Interface', self.render_upei())
+            self.cv2.imshow('Unit Primary Emotional Interface', self.render_upei())
 
         key = self.cv2.waitKey(round(1000 / self.framerate))
         self.handle_keyboard_input(key)
