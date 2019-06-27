@@ -16,6 +16,9 @@ class Database:
         print('inserting user...')
         #t = self.insert('users', {'name':'James'})
 
+    def see_user(self, user_id, time):
+        return self.execute('update users set last_seen_at = ? where id = ?', (time, user_id))
+
     def insert(self, table, params):
         values = list(params.values())
         keys_string = ','.join([*params])

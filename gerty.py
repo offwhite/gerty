@@ -1,28 +1,35 @@
 #!/usr/bin/env python
 
+from subprocess import call
 import cv2
 import vision
 import upei
 import db
+import short_term_memory
 
 class Gerty:
     def __init__(self, cv2):
         self.db = db.Database()
-        self.vision = vision.Vision(cv2, self.db)
+        self.stm = short_term_memory.StmUnit(self.db)
+        self.vision = vision.Vision(cv2, self.db, self.stm)
         self.upei = upei.Upei(cv2)
         self.cv2 = cv2
-        self.debug = False
+        self.debug = True
         self.show_upei = True
-        self.framerate = 10 # number of frames per second
+        self.framerate = 2 # number of frames per second
+        self.prev_users_in_room = {}
+        self.users_in_room = {}
 
     def start(self):
-         print("[INFO] Starting Gerty - press 'q' to quit")
-         self.running = True
+        self.say("waking up")
+        print("[INFO] Starting Gerty - press 'q' to quit")
+        self.running = True
 
-         while self.running:
+        while self.running:
             self.process_frame()
 
     def process_frame(self):
+        print('[INFO] processing frame')
         (self.frame, self.faces) = self.vision.call()
         if(self.debug):
             self.cv2.imshow('View', self.frame)
@@ -31,6 +38,16 @@ class Gerty:
 
         key = self.cv2.waitKey(round(1000 / self.framerate))
         self.handle_keyboard_input(key)
+        self.react_to_users()
+
+    def react_to_users(self):
+        new_users = self.stm.new_users()
+        for id in new_users:
+            name = self.stm.users_name(id)
+            self.say('hello '+name)
+
+    def say(self, string):
+        call(["python3", "speak.py", string])
 
     def render_upei(self):
         exp = 'neutral'
@@ -51,13 +68,14 @@ class Gerty:
             self.stop()
 
         if key == ord('c'):
-            print('testing')
+            self.say('testing the longer words in a sentence')
+            self.say('this is a different sentence.')
 
         if key == ord('d'):
             self.debug = (self.debug == False)
 
         if key == ord('s'):
-            self.set_user()
+            self.set_user_name()
 
         if key == ord('u'):
             print(self.db.all('users'))
@@ -65,7 +83,7 @@ class Gerty:
         if key == ord('t'):
             self.vision.train()
 
-    def set_user(self):
+    def set_user_name(self):
         id = input('Id: ')
         name = input('Name: ')
         if(name == 'delete'):
@@ -75,6 +93,7 @@ class Gerty:
 
     def stop(self):
         print("\n[INFO] Exiting Gerty")
+        self.say('Goodbye')
         self.vision.stop()
         self.cv2.destroyAllWindows()
         self.running = False

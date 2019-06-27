@@ -8,9 +8,10 @@ import time
 # 2. check how many we have of that id
 # 3. if enough, run training
 class Trainer:
-    def __init__(self, cv2, db):
+    def __init__(self, cv2, db, stm):
         self.cv2 = cv2
         self.db = db
+        self.stm = stm
         self.path = 'faces'
         self.recognizer = self.cv2.face.LBPHFaceRecognizer_create()
         self.recognizer.read('trainer/trainer.yml')
@@ -59,6 +60,7 @@ class Trainer:
 
     def create_user(self):
         self.db.insert('users', {'id': self.user_id, 'name': 'User '+str(self.user_id), 'permissions': 0})
+        self.stm.see_user(self.user_id)
         self.user_id = None
 
     def train(self):
